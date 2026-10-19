@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Calculadora</title>
+  
+  <!-- Meta tags para PWA / App Nativa -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Calculadora">
+  <meta name="theme-color" content="#121316">
+
+  <!-- Manifest incrustado -->
+  <link rel="manifest" href="data:application/json;charset=utf-8,%7B%22name%22%3A%22Calculadora%22%2C%22short_name%22%3A%22Calculadora%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23121316%22%2C%22theme_color%22%3A%22%23121316%22%7D">
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      font-family: 'Roboto', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    html, body {
+      height: 100%;
+      background-color: #121316;
+      color: #E3E2E6;
+      overflow: hidden;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+
+    /* Top Bar Estilo Android Limpio */
+    .top-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 48px;
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+      padding: 8px 20px 0 20px;
+      color: #C4C6CF;
+      font-size: 15px;
+      z-index: 10;
+    }
+
+    .deg-trigger {
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+
+    /* Display Area flexible estilo Android */
+    .display-container {
+      padding: 12px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: flex-end;
+      flex: 1;
+      word-break: break-all;
+      position: relative;
+    }
+
+    .expression {
+      font-size: 20px;
+      color: #8E919A;
+      min-height: 28px;
+      margin-bottom: 4px;
+    }
+
+    .result-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      width: 100%;
+      gap: 12px;
+    }
+
+    .result {
+      font-size: 48px;
+      color: #E3E2E6;
+      font-weight: 400;
+    }
+
+    .btn-backspace-inline {
+      background: none;
+      border: none;
+      color: #C4C6CF;
+      font-size: 24px;
+      cursor: pointer;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Keypad Grid Android Completo */
+    .keypad {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      padding: 8px 12px calc(16px + env(safe-area-inset-bottom)) 12px;
+      background-color: #121316;
+    }
+
+    .btn {
+      height: 58px;
+      border-radius: 29px;
+      border: none;
+      outline: none;
+      font-size: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: filter 0.1s, transform 0.05s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn:active {
+      filter: brightness(1.3);
+      transform: scale(0.96);
+    }
+
+    /* Colores Android Material Design 3 */
+    .btn-num {
+      background-color: #2E3036;
+      color: #E3E2E6;
+    }
+
+    .btn-op {
+      background-color: #004A77;
+      color: #C2E7FF;
+    }
+
+    .btn-func {
+      background-color: #43474E;
+      color: #E3E2E6;
+    }
+
+    .btn-equals {
+      background-color: #38656A;
+      color: #6FF6FE;
+    }
+
+    /* Modal Secreto */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.9);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .modal-content {
+      background: #1E2025;
+      border-radius: 28px;
+      padding: 24px;
+      width: 100%;
+      max-width: 360px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+
+    .modal-title {
+      font-size: 20px;
+      margin-bottom: 16px;
+      color: #A8C7FA;
+      font-weight: 600;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      color: #C4C6CF;
+      margin-bottom: 6px;
+    }
+
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #43474E;
+      background: #121316;
+      color: #fff;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .btn-modal {
+      padding: 10px 20px;
+      border-radius: 20px;
+      border: none;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .btn-cancel { background: transparent; color: #A8C7FA; }
+    .btn-save { background: #A8C7FA; color: #003062; }
+  </style>
+</head>
+<body>
+
+  <!-- Barra superior Android -->
+  <div class="top-bar">
+    <span class="deg-trigger" id="degTrigger">DEG</span>
+  </div>
+
+  <div class="display-container">
+    <div class="expression" id="expression"></div>
+    <div class="result-row">
+      <div class="result" id="result">0</div>
+      <button class="btn-backspace-inline" id="btnDelInline" onclick="handleDel()" style="display: none;">⌫</button>
+    </div>
+  </div>
+
+  <!-- Teclado Android Completo de 5 Filas -->
+  <div class="keypad">
+    <!-- Fila 1 -->
+    <button class="btn btn-func" id="btnAC">AC</button>
+    <button class="btn btn-func" onclick="handleOp('()')">( )</button>
+    <button class="btn btn-func" onclick="handleOp('%')">%</button>
+    <button class="btn btn-op" onclick="handleOp('/')">÷</button>
+
+    <!-- Fila 2 -->
+    <button class="btn btn-num" onclick="handleNum('7')">7</button>
+    <button class="btn btn-num" onclick="handleNum('8')">8</button>
+    <button class="btn btn-num" onclick="handleNum('9')">9</button>
+    <button class="btn btn-op" onclick="handleOp('*')">×</button>
+
+    <!-- Fila 3 -->
+    <button class="btn btn-num" onclick="handleNum('4')">4</button>
+    <button class="btn btn-num" onclick="handleNum('5')">5</button>
+    <button class="btn btn-num" onclick="handleNum('6')">6</button>
+    <button class="btn btn-op" onclick="handleOp('-')">−</button>
+
+    <!-- Fila 4 -->
+    <button class="btn btn-num" onclick="handleNum('1')">1</button>
+    <button class="btn btn-num" onclick="handleNum('2')">2</button>
+    <button class="btn btn-num" onclick="handleNum('3')">3</button>
+    <button class="btn btn-op" onclick="handleOp('+')">+</button>
+
+    <!-- Fila 5 -->
+    <button class="btn btn-num" onclick="handleToggleSign()">+/−</button>
+    <button class="btn btn-num" onclick="handleNum('0')">0</button>
+    <button class="btn btn-num" onclick="handleNum('.')">.</button>
+    <button class="btn btn-equals" onclick="handleEquals()">=</button>
+  </div>
+
+  <!-- Panel Secreto de Configuración -->
+  <div class="modal-overlay" id="secretModal">
+    <div class="modal-content">
+      <div class="modal-title">Configuración Secreta</div>
+      
+      <div class="form-group">
+        <label>Modo de Forzado</label>
+        <select id="forceMode" onchange="toggleNumberInput()">
+          <option value="TOXIC">Número Fijo / TOXIC</option>
+          <option value="DATETIME">Fecha y Hora (DDMMAAHHMM)</option>
+          <option value="TIME">Solo Hora Actual (HHMM)</option>
+          <option value="DATE">Solo Fecha Actual (DDMMAA)</option>
+        </select>
+      </div>
+
+      <div class="form-group" id="numberGroup">
+        <label>Número Secreto / Predicción</label>
+        <input type="text" inputmode="numeric" id="secretNumber" placeholder="Ej. 12345" value="12345">
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-modal btn-cancel" onclick="closeModal()">Cancelar</button>
+        <button class="btn-modal btn-save" onclick="saveSettings()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentInput = "0";
+    let expressionInput = "";
+    let forceNumber = "12345";
+    let forceMode = "TOXIC";
+
+    const resultEl = document.getElementById('result');
+    const exprEl = document.getElementById('expression');
+    const btnDelInline = document.getElementById('btnDelInline');
+    const modalEl = document.getElementById('secretModal');
+    const degTrigger = document.getElementById('degTrigger');
+    const btnAC = document.getElementById('btnAC');
+    const numberGroup = document.getElementById('numberGroup');
+
+    // Abrir menú secreto al pulsar DEG
+    degTrigger.addEventListener('click', openModal);
+
+    // Abrir menú secreto manteniendo presionado AC por 1 segundo
+    let pressTimer;
+    btnAC.addEventListener('touchstart', () => {
+      pressTimer = setTimeout(() => openModal(), 1000);
+    });
+    btnAC.addEventListener('touchend', () => clearTimeout(pressTimer));
+    btnAC.addEventListener('mousedown', () => {
+      pressTimer = setTimeout(() => openModal(), 1000);
+    });
+    btnAC.addEventListener('mouseup', () => clearTimeout(pressTimer));
+
+    // Botón AC: Limpia todo el cálculo
+    btnAC.addEventListener('click', () => {
+      currentInput = "0";
+      expressionInput = "";
+      updateDisplay();
+    });
+
+    function toggleNumberInput() {
+      const selectedMode = document.getElementById('forceMode').value;
+      numberGroup.style.display = (selectedMode === "TOXIC") ? "block" : "none";
+    }
+
+    function openModal() {
+      document.getElementById('secretNumber').value = forceNumber;
+      document.getElementById('forceMode').value = forceMode;
+      toggleNumberInput();
+      modalEl.style.display = 'flex';
+    }
+
+    function closeModal() {
+      modalEl.style.display = 'none';
+    }
+
+    function saveSettings() {
+      const inputVal = document.getElementById('secretNumber').value;
+      forceNumber = inputVal !== "" ? inputVal : "12345";
+      forceMode = document.getElementById('forceMode').value;
+      closeModal();
+    }
+
+    function handleNum(num) {
+      if (currentInput === "0" && num !== ".") {
+        currentInput = num;
+      } else {
+        currentInput += num;
+      }
+      updateDisplay();
+    }
+
+    // Borrado cifra a cifra
+    function handleDel() {
+      if (currentInput.length > 1) {
+        currentInput = currentInput.slice(0, -1);
+      } else {
+        currentInput = "0";
+      }
+      updateDisplay();
+    }
+
+    function handleToggleSign() {
+      if (currentInput !== "0") {
+        if (currentInput.startsWith("-")) {
+          currentInput = currentInput.slice(1);
+        } else {
+          currentInput = "-" + currentInput;
+        }
+        updateDisplay();
+      }
+    }
+
+    function handleOp(op) {
+      if (expressionInput === "") {
+        expressionInput = currentInput + " " + op;
+      } else {
+        expressionInput += " " + currentInput + " " + op;
+      }
+      currentInput = "0";
+      updateDisplay();
+    }
+
+    function handleEquals() {
+      const now = new Date();
+
+      if (forceMode === "TOXIC") {
+        currentInput = forceNumber;
+      } else if (forceMode === "DATETIME") {
+        const day = now.getDate().toString().padStart(2, '0');
+        const month = (now.getMonth() + 1).toString().padStart(2, '0');
+        const year = now.getFullYear().toString().slice(-2);
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        currentInput = day + month + year + hours + minutes;
+      } else if (forceMode === "TIME") {
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        currentInput = hours + minutes;
+      } else if (forceMode === "DATE") {
+        const day = now.getDate().toString().padStart(2, '0');
+        const month = (now.getMonth() + 1).toString().padStart(2, '0');
+        const year = now.getFullYear().toString().slice(-2);
+        currentInput = day + month + year;
+      }
+
+      expressionInput = "";
+      updateDisplay();
+    }
+
+    function updateDisplay() {
+      resultEl.innerText = currentInput;
+      exprEl.innerText = expressionInput;
+
+      if (currentInput !== "0" && currentInput !== "") {
+        btnDelInline.style.display = "flex";
+      } else {
+        btnDelInline.style.display = "none";
+      }
+    }
+  </script>
+</body>
+</html>
